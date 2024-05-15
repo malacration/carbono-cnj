@@ -23,7 +23,7 @@ import os
 
 def getMetricas() :
     chrome_options=webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")
+    # chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     # chrome_options.add_argument("window-size=1400,2100") 
     chrome_options.add_argument('--disable-gpu')
@@ -32,17 +32,13 @@ def getMetricas() :
     driver.get("https://paineisanalytics.cnj.jus.br/single/?appid=4a2b72d3-1b68-4c5e-b6fc-5b92f28dc45c&sheet=d2c4c0b8-6f24-47d3-b464-2079ce604f2c&theme=horizon&lang=pt-BR&opt=ctxmenu,currsel")
     delay = 100
 
-    xpath = "/html/body/div[4]/div/div[2]/div/article/div/div[8]/div/article/div[1]/div/div/qv-filterpane/div/div/div/div[2]/span"
+    inputSearch = "/html/body/div[4]/div/div[2]/div/article/div/div[7]/div/article/div[1]/div/div/qv-filterpane/div/div/div/div[2]/span"
 
-    try:
-        myElem = WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, xpath)))
-        print("done")
-    except TimeoutException:
-        print("Loading took too much time!")
-
+    # WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, inputSearch)))
 
     try: 
-        driver.find_element(By.XPATH, xpath).click()
+        datetime.strptime(latenciaExtrator, '%H:%M:%S.%f')
+        driver.find_element(By.XPATH, inputSearch).click()
         time.sleep(3)
         focused_elem = driver.switch_to.active_element.send_keys("TJRO")
         time.sleep(2)
@@ -83,31 +79,40 @@ class TelegramMsg:
             indent=4)
 
 def telegramMsg(mensagem):
-    botID = os.environ['telegram_botid']
-    token = os.environ['telegram_token']
-    url = f'https://api.telegram.org/{botID}:{token}/sendMessage'
-    chat_id = -1001610705904
-    topico = 768150
-    msg = TelegramMsg(chat_id,topico,mensagem,"html")
-    headers = {'Content-type': 'application/json'}
-    print(msg.toJSON())
-    return requests.post(url, data=msg.toJSON(),headers=headers)
+    try:
+        botID = os.environ['telegram_botid']
+        token = os.environ['telegram_token']
+        url = f'https://api.telegram.org/{botID}:{token}/sendMessage'
+        chat_id = -1001610705904
+        topico = 768150
+        msg = TelegramMsg(chat_id,topico,mensagem,"html")
+        headers = {'Content-type': 'application/json'}
+        print(msg.toJSON())
+        requests.post(url, data=msg.toJSON(),headers=headers)
+    except:
+        print("Erro ao enviar mensagem no telegram")
 
 def googleApiChat(mensagem):
-    url = os.environ['google_webhook']
-    app_message = {"text": mensagem}
-    headers = {'Content-type': 'application/json'}
-    return requests.post(url, data=dumps(app_message),headers=headers)
+    try:
+        url = os.environ['google_webhook']
+        app_message = {"text": mensagem}
+        headers = {'Content-type': 'application/json'}
+        return requests.post(url, data=dumps(app_message),headers=headers)
+    except:
+        print("Erro ao enviar mensagem ao google")
 
 try:
+    print("Iniciando consulta do portal do CNJ")
     sevenMinutes = datetime.strptime('00:07:00.00', '%H:%M:%S.%f')
     latencia = getMetricas()
     if(latencia > sevenMinutes):
+        print(f"O extrator esta com lag! tempo registrado no CNJ {latencia.strftime('%H:%M:%S.%f')}")
         googleApiChat(f"O extrator esta com lag! tempo registrado no CNJ {latencia.strftime('%H:%M:%S.%f')}")
         telegramMsg(f"O extrator esta com lag! tempo registrado no CNJ {latencia.strftime('%H:%M:%S.%f')}")
     else:
         print("Data Menor que 7 minutos")
 except Exception:
+    print("--- Erro detectado ---")
     print(traceback.format_exc())
     telegramMsg("Erro ao obter metricas no CNJ")
     googleApiChat("Erro ao obter metricas no CNJ")
