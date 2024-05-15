@@ -34,7 +34,7 @@ def getMetricas() :
 
     inputSearch = "/html/body/div[4]/div/div[2]/div/article/div/div[7]/div/article/div[1]/div/div/qv-filterpane/div/div/div/div[2]/span"
 
-    # WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, inputSearch)))
+    WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, inputSearch)))
 
     try: 
         datetime.strptime(latenciaExtrator, '%H:%M:%S.%f')
