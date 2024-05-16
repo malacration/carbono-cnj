@@ -37,7 +37,6 @@ def getMetricas() :
     WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, inputSearch)))
 
     try: 
-        datetime.strptime(latenciaExtrator, '%H:%M:%S.%f')
         driver.find_element(By.XPATH, inputSearch).click()
         time.sleep(3)
         focused_elem = driver.switch_to.active_element.send_keys("TJRO")
@@ -45,14 +44,14 @@ def getMetricas() :
         tjroFilter = "/html/body/div[7]/div/div/div/ng-transclude/div/div[3]/div/article/div[1]/div/div/div/div[2]/div[1]/div/ul/li[1]"
         driver.find_element(By.XPATH, tjroFilter).click()
         time.sleep(2)
-        atualizadoEmPath = "/html/body/div[4]/div/div[2]/div/article/div/div[3]/div/article/div[1]/div/div/div/button/text/span"
+        atualizadoEmPath = "/html/body/div[4]/div/div[2]/div/article/div/div[15]/div/article/div[1]/div/div/div/div/div/div/b/font"
         latenciaTjRoPath = "/html/body/div[4]/div/div[2]/div/article/div/div[10]/div/article/div[1]/div/div/div/div/div/div[2]/div/div/div[1]/div/span"
-        latenciaExtratorPath = "/html/body/div[4]/div/div[2]/div/article/div/div[11]/div/article/div[1]/div/div/div/div/div/div[2]/div/div/div[1]/div/span"
-        latenciaConversorPath = "/html/body/div[4]/div/div[2]/div/article/div/div[12]/div/article/div[1]/div/div/div/div/div/div[2]/div/div/div[1]/div/span"
+        latenciaExtratorPath = "/html/body/div[4]/div/div[2]/div/article/div/div[10]/div/article/div[1]/div/div/div/div/div/div[2]/div/div/div[1]/div/span"
+        latenciaConversorPath = "/html/body/div[4]/div/div[2]/div/article/div/div[11]/div/article/div[1]/div/div/div/div/div/div[2]/div/div/div[1]/div/span"
         
 
-        latenciaExtrator = driver.find_element(By.XPATH, latenciaExtratorPath).text
         print("--- Relatorio ---")
+        latenciaExtrator = driver.find_element(By.XPATH, latenciaExtratorPath).text
         print(driver.find_element(By.XPATH, atualizadoEmPath).text)
         print("Latencia TJRO: " + driver.find_element(By.XPATH, latenciaTjRoPath).text)
         print("Latencia Extrator: " + latenciaExtrator)
