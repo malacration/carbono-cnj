@@ -15,53 +15,15 @@ import time
 from json import dumps
 import traceback
 import os
+from src.metrica import Metrica
+import websocket
+import ssl
+import json
 
 
 
 
-
-
-def getMetricas() :
-    chrome_options=webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    # chrome_options.add_argument("window-size=1400,2100") 
-    chrome_options.add_argument('--disable-gpu')
-
-    driver=webdriver.Chrome(options=chrome_options)
-    driver.get("https://paineisanalytics.cnj.jus.br/single/?appid=4a2b72d3-1b68-4c5e-b6fc-5b92f28dc45c&sheet=d2c4c0b8-6f24-47d3-b464-2079ce604f2c&theme=horizon&lang=pt-BR&opt=ctxmenu,currsel")
-    delay = 100
-
-    inputSearch = "/html/body/div[4]/div/div[2]/div/article/div/div[7]/div/article/div[1]/div/div/qv-filterpane/div/div/div/div[2]/span"
-
-    WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.XPATH, inputSearch)))
-
-    try: 
-        driver.find_element(By.XPATH, inputSearch).click()
-        time.sleep(3)
-        focused_elem = driver.switch_to.active_element.send_keys("TJRO")
-        time.sleep(2)
-        tjroFilter = "/html/body/div[7]/div/div/div/ng-transclude/div/div[3]/div/article/div[1]/div/div/div/div[2]/div[1]/div/ul/li[1]"
-        driver.find_element(By.XPATH, tjroFilter).click()
-        time.sleep(2)
-        atualizadoEmPath = "/html/body/div[4]/div/div[2]/div/article/div/div[15]/div/article/div[1]/div/div/div/div/div/div/b/font"
-        latenciaTjRoPath = "/html/body/div[4]/div/div[2]/div/article/div/div[10]/div/article/div[1]/div/div/div/div/div/div[2]/div/div/div[1]/div/span"
-        latenciaExtratorPath = "/html/body/div[4]/div/div[2]/div/article/div/div[10]/div/article/div[1]/div/div/div/div/div/div[2]/div/div/div[1]/div/span"
-        latenciaConversorPath = "/html/body/div[4]/div/div[2]/div/article/div/div[11]/div/article/div[1]/div/div/div/div/div/div[2]/div/div/div[1]/div/span"
-        
-
-        print("--- Relatorio ---")
-        latenciaExtrator = driver.find_element(By.XPATH, latenciaExtratorPath).text
-        print(driver.find_element(By.XPATH, atualizadoEmPath).text)
-        print("Latencia TJRO: " + driver.find_element(By.XPATH, latenciaTjRoPath).text)
-        print("Latencia Extrator: " + latenciaExtrator)
-        print("Latencia Conversor: " + driver.find_element(By.XPATH, latenciaConversorPath).text)
-    except Exception:
-        print(traceback.format_exc())
-        print("Erro")
-
-    driver.close()
-    return datetime.strptime(latenciaExtrator, '%H:%M:%S.%f')
+delay = 100
 
 class TelegramMsg:
     def __init__(self,chatId,messageThreadId,text,parseMode):
@@ -100,10 +62,28 @@ def googleApiChat(mensagem):
     except:
         print("Erro ao enviar mensagem ao google")
 
+
+def tentar_executar(funcao, max_tentativas=3):
+    tentativas = 0
+    ultima_excecao = None
+    while tentativas < max_tentativas:
+        try:
+            resultado = funcao()
+            return resultado
+        except Exception as e:
+            tentativas += 1
+            ultima_excecao = e
+            print(f"Tentativa {tentativas} falhou: {e}")
+            if tentativas < max_tentativas:
+                print("Tentando novamente...")
+                time.sleep(5)
+    raise Exception("Número máximo de tentativas alcançado. A função falhou todas as vezes.") from ultima_excecao
+
 try:
     print("Iniciando consulta do portal do CNJ")
+    metrica = tentar_executar(lambda : Metrica())
     sevenMinutes = datetime.strptime('00:07:00.00', '%H:%M:%S.%f')
-    latencia = getMetricas()
+    latencia = datetime.strptime(metrica.latenciaExtrator, '%H:%M:%S.%f')
     if(latencia > sevenMinutes):
         print(f"O extrator esta com lag! tempo registrado no CNJ {latencia.strftime('%H:%M:%S.%f')}")
         googleApiChat(f"O extrator esta com lag! tempo registrado no CNJ {latencia.strftime('%H:%M:%S.%f')}")
@@ -112,6 +92,6 @@ try:
         print("Data Menor que 7 minutos")
 except Exception:
     print("--- Erro detectado ---")
-    print(traceback.format_exc())
+    traceback.print_exception()
     telegramMsg("Erro ao obter metricas no CNJ")
     googleApiChat("Erro ao obter metricas no CNJ")

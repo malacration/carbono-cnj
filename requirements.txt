@@ -3,3 +3,4 @@ beautifulsoup4
 selenium==4.20.0
 geckodriver-autoinstaller
 simplejson
+websocket-client
